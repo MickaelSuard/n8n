@@ -1,0 +1,129 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "sendTo": "cleabeaufrere@gmail.com",
+        "subject": "Test Email",
+        "emailType": "text",
+        "message": "={{ $json.chatInput }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        680,
+        -20
+      ],
+      "id": "49a55857-30fd-40c4-8439-99d861fffe61",
+      "name": "Gmail",
+      "webhookId": "0289ffc7-4d3d-40af-88cf-36264e7af786",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vtHLvY7RVg1iN8A0",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f2b93e78-0cdf-40df-8e60-aae44a0578b2",
+      "name": "When chat message received",
+      "webhookId": "212d161c-a1ae-4154-8d7e-4cb96a23b213"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "mistral"
+            },
+            {
+              "name": "prompt",
+              "value": "Quel est le capital de la France ?"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        260
+      ],
+      "id": "35814df8-8b57-425e-8215-2bec1a46ad9a",
+      "name": "HTTP Request",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Créer une variable pour stocker la réponse complète\nlet fullResponse = '';\n\n// Récupérer le contenu brut de la réponse\nconst rawData = items[0].json.body;\n\n// Vérifier si rawData est défini\nif (rawData) {\n    // Afficher les données brutes dans la console pour vérifier la structure\n    console.log(\"Données brutes reçues:\", rawData);\n\n    // Diviser les données en plusieurs fragments, selon le séparateur de ligne '\\n'\n    const fragments = rawData.split('\\n');\n    console.log(\"Fragments obtenus:\", fragments); // Afficher les fragments\n\n    // Traiter chaque fragment\n    fragments.forEach(fragment => {\n        try {\n            // Essayer de parser chaque fragment en JSON\n            const parsedFragment = JSON.parse(fragment);\n            console.log(\"Fragment analysé:\", parsedFragment); // Afficher chaque fragment analysé\n\n            // Si un fragment contient une réponse, l'ajouter à fullResponse\n            if (parsedFragment.response) {\n                fullResponse += parsedFragment.response;\n            }\n\n            // Si le fragment est marqué comme terminé (done: true), arrêter la collecte des fragments\n            if (parsedFragment.done === true) {\n                // Enlever les espaces ou retours à la ligne inutiles\n                fullResponse = fullResponse.trim();\n\n                // Marquer le processus comme terminé\n                console.log(\"Réponse complète reçue:\", fullResponse); // Log de la réponse complète reçue\n                return;\n            }\n\n        } catch (error) {\n            // Si le fragment ne peut pas être parsé, ignorer et continuer\n            console.error(\"Erreur de parsing du fragment:\", error);\n        }\n    });\n} else {\n    // Si rawData est vide ou non défini, gérer l'erreur\n    console.error(\"Aucune donnée reçue dans rawData\");\n}\n\n// Retourner la réponse complète une fois tous les fragments traités\nreturn [\n  {\n    json: {\n      completeResponse: fullResponse || \"Aucune réponse complète reçue\",  // Message par défaut si aucun fragment\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        260
+      ],
+      "id": "997350e3-5cb1-4198-a2ef-a36dd095c761",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f6c31984-62a3-4422-9bac-a285a9852e6f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3b24816c2395a6b2ce23e0d5418db1e46c29188f7ce7d2afd2554c0fefe304bd"
+  },
+  "id": "e7fFJRkbBWhc87Jc",
+  "tags": []
+}
